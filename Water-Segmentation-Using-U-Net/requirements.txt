@@ -1,1 +1,7 @@
-
+torch
+numpy
+opencv-python
+matplotlib
+Pillow
+scikit-learn
+rasterio
