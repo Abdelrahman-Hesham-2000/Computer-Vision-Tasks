@@ -38,13 +38,6 @@ Rasterio
 OpenCV
 NumPy
 Matplotlib
-Project Structure
-Water-Segmentation/
-│
-├── Water_Segmentation_Week2_Final.ipynb
-├── README.md
-├── README.pdf
-├── Report.pdf
 
 Workflow
 Load multispectral satellite images.
