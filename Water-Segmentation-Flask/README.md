@@ -111,9 +111,15 @@ http://127.0.0.1:5000
 
 ## 🧠 Model
 
-The trained U-Net model is **not included** in this repository because it exceeds GitHub's file size limit.
+The trained U-Net model is not included in this repository because it exceeds GitHub's file size limit.
 
-After downloading the model, place it inside:
+Download the pretrained model here:
+
+https://drive.google.com/file/d/1WaVsITp3H0zP-9FVCIC_61FfuyRGobXZ/view?usp=sharing
+
+After downloading, place the model inside:
+
+models/unet_water.pth
 
 ```
 
