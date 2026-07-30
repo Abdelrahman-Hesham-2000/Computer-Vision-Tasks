@@ -1,114 +1,158 @@
-# Water Segmentation — Flask Deployment
+# 🌊 Water Segmentation Flask Web Application
 
-A Flask application for deploying the U-Net water segmentation model from the notebook.
+A Flask-based web application for **semantic segmentation of water bodies** from satellite images using a **U-Net deep learning model** built with **PyTorch**.
 
-## Project Structure
+The application allows users to upload a satellite image and generates a segmentation mask highlighting water regions.
+
+---
+
+## 📌 Features
+
+- Upload satellite images through a simple web interface.
+- Automatic image preprocessing.
+- Water body segmentation using a trained U-Net model.
+- Display the predicted segmentation mask.
+- Lightweight and easy-to-use Flask application.
+
+---
+
+## 🛠️ Technologies Used
+
+- Python
+- Flask
+- PyTorch
+- OpenCV
+- NumPy
+- Pillow
+- HTML
+- CSS
+- Jinja2
+
+---
+
+## 📂 Project Structure
 
 ```
-water_seg_app/
-├── app.py              # Flask server + inference logic
-├── model.py            # UNet architecture definition (same as in the notebook)
-├── requirements.txt
+Water-Segmentation-Flask/
+│
 ├── models/
-│   └── unet_water.pth  # ⚠️ You need to place this here (trained model weights)
+│   └── .gitkeep
+│
 ├── templates/
-│   └── index.html      # Upload and results UI
-└── uploads/             # Temporary files during upload
+│   └── index.html
+│
+├── uploads/
+│   └── .gitkeep
+│
+├── app.py
+├── model.py
+├── requirements.txt
+├── README.md
+└── .gitignore
 ```
 
-## Important First Step: Save the Model Weights
+---
 
-The notebook trains the model but doesn't save it to disk. Before deploying,
-add this line to the last training cell in the notebook (right after the
-epoch loop):
+## 🚀 Installation
 
-```python
-torch.save(model.state_dict(), "unet_water.pth")
-```
-
-Run the notebook, then copy the resulting `unet_water.pth` file into the
-`water_seg_app/models/` folder.
-
-## Running Locally
+Clone the repository
 
 ```bash
-cd water_seg_app
+git clone https://github.com/Abdelrahman-Hesham-2000/Computer-Vision-Tasks.git
+```
+
+Navigate to the project folder
+
+```bash
+cd Computer-Vision-Tasks/Water-Segmentation-Flask
+```
+
+Create a virtual environment (recommended)
+
+```bash
 python -m venv venv
-source venv/bin/activate        # on Windows: venv\Scripts\activate
+```
 
+Activate it
+
+### Windows
+
+```bash
+venv\Scripts\activate
+```
+
+### Linux / macOS
+
+```bash
+source venv/bin/activate
+```
+
+Install the required packages
+
+```bash
 pip install -r requirements.txt
+```
 
-# Place unet_water.pth inside models/ before running
+---
+
+## ▶️ Running the Application
+
+```bash
 python app.py
 ```
 
-The server will run at `http://localhost:5000`.
+Open your browser and navigate to
 
-> Note: `rasterio` sometimes needs `GDAL` installed on the system.
-> On Ubuntu: `sudo apt-get install -y gdal-bin libgdal-dev` before `pip install rasterio`.
-> If you're using conda, the easiest way is: `conda install -c conda-forge rasterio`.
+```
+http://127.0.0.1:5000
+```
 
-## Using the Interface
+---
 
-1. Open `http://localhost:5000` in your browser.
-2. Upload a 12-band GeoTIFF image (same format as the training data).
-3. Click "Run Model" — you'll see the RGB preview, the predicted mask,
-   and the percentage of water in the image.
+## 🧠 Model
 
-## Direct API (no UI)
+The trained U-Net model is **not included** in this repository because it exceeds GitHub's file size limit.
+
+After downloading the model, place it inside:
+
+```
+
+## 🔄 Workflow
+
+```
+Satellite Image
+        │
+        ▼
+ Image Preprocessing
+        │
+        ▼
+    U-Net Model
+        │
+        ▼
+ Predicted Mask
+        │
+        ▼
+ Flask Web Interface
+```
+
+---
+
+## 📦 Requirements
+
+All required packages are listed in
+
+```
+requirements.txt
+```
+
+Install them using
 
 ```bash
-curl -X POST http://localhost:5000/predict \
-  -F "file=@/path/to/image.tif"
-```
+pip install -r requirements.txt
 
-The response returns JSON containing:
-- `rgb_preview`: RGB image as base64
-- `mask`: predicted water mask as base64
-- `water_percentage`: percentage of pixels classified as water
 
-There's also `GET /health` to confirm the server is running and the model is loaded.
+---
 
-## Running in Production
+## ⭐ Support
 
-Don't use `app.run(debug=True)` in production. Use gunicorn instead:
-
-```bash
-gunicorn -w 2 -b 0.0.0.0:8000 --timeout 120 app:app
-```
-
-`-w 2` = number of workers (adjust based on available CPU cores and memory —
-the model uses a fair amount of memory).
-
-### Docker (optional)
-
-If you want to containerize the project, here's a simple `Dockerfile`:
-
-```dockerfile
-FROM python:3.11-slim
-
-RUN apt-get update && apt-get install -y \
-    gdal-bin libgdal-dev g++ \
-    && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-EXPOSE 8000
-
-CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:8000", "--timeout", "120", "app:app"]
-```
-
-```bash
-docker build -t water-seg-app .
-docker run -p 8000:8000 -v $(pwd)/models:/app/models water-seg-app
-```
-
-## Ideas for Future Improvements
-
-- Add authentication or rate limiting if this will be hosted publicly.
-- Store results on S3/cloud storage instead of deleting them immediately, if you need archiving.
-- Use `torch.jit.script` or ONNX to speed up inference in production.
-- Add a queue (e.g. Celery/RQ) if images are large and processing could take a while.
+If you found this project useful, consider giving the repository a ⭐.
