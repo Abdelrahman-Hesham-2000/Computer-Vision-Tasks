@@ -1,0 +1,7 @@
+venv/
+__pycache__/
+uploads/*
+!uploads/.gitkeep
+*.pyc
+.env
+models/*.pth

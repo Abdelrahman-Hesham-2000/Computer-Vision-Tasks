@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Water Segmentation — U-Net Inference</title>
+<style>
+  :root {
+    --abyss: #061620;
+    --deep: #0a2233;
+    --panel: #0e2c40;
+    --line: #163c53;
+    --cyan: #3fd6c8;
+    --cyan-dim: #1f7a70;
+    --sand: #d8c9a3;
+    --text: #dce9ee;
+    --text-dim: #7fa1ae;
+    --danger: #e0664f;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: radial-gradient(ellipse at top, var(--deep), var(--abyss) 70%);
+    color: var(--text);
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    min-height: 100vh;
+    padding: 40px 20px 80px;
+  }
+
+  .mono { font-family: 'Consolas', 'SFMono-Regular', monospace; letter-spacing: 0.03em; }
+
+  header {
+    max-width: 920px;
+    margin: 0 auto 36px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 24px;
+  }
+
+  .eyebrow {
+    color: var(--cyan);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    margin-bottom: 10px;
+  }
+
+  h1 {
+    font-size: 34px;
+    margin: 0 0 8px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .sub { color: var(--text-dim); font-size: 15px; line-height: 1.7; max-width: 640px; }
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    border: 1px solid var(--line);
+  }
+  .status.ok { color: var(--cyan); border-color: var(--cyan-dim); }
+  .status.bad { color: var(--danger); border-color: #7a2f22; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+  main {
+    max-width: 920px;
+    margin: 0 auto;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+
+  .panel-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--cyan);
+    margin-bottom: 18px;
+  }
+
+  .dropzone {
+    border: 1.5px dashed var(--line);
+    border-radius: 4px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .dropzone:hover, .dropzone.drag {
+    border-color: var(--cyan);
+    background: rgba(63, 214, 200, 0.04);
+  }
+  .dropzone p { margin: 6px 0; }
+  .dropzone .hint { color: var(--text-dim); font-size: 13px; }
+  .dropzone .filename { color: var(--sand); font-size: 14px; margin-top: 10px; }
+
+  input[type=file] { display: none; }
+
+  button {
+    background: var(--cyan);
+    color: var(--abyss);
+    border: none;
+    padding: 13px 26px;
+    font-weight: 700;
+    font-size: 14px;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-top: 18px;
+    transition: opacity 0.2s;
+  }
+  button:disabled { opacity: 0.35; cursor: not-allowed; }
+  button:not(:disabled):hover { opacity: 0.85; }
+
+  .bands {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 6px;
+    margin-top: 16px;
+  }
+  .band {
+    font-size: 12px;
+    color: var(--text-dim);
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+  }
+  .band b { color: var(--text); font-weight: 600; }
+
+  .results {
+    display: none;
+  }
+  .results.show { display: block; }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .img-card {
+    background: #051119;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .img-card img { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+  .img-card .label {
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-top: 1px solid var(--line);
+  }
+
+  .metric {
+    margin-top: 20px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .metric .value { font-size: 40px; font-weight: 700; color: var(--cyan); }
+  .metric .desc { color: var(--text-dim); font-size: 13px; }
+
+  .error-box {
+    display: none;
+    color: var(--danger);
+    background: rgba(224, 102, 79, 0.08);
+    border: 1px solid #7a2f22;
+    padding: 14px 18px;
+    border-radius: 3px;
+    font-size: 14px;
+    margin-top: 16px;
+  }
+  .error-box.show { display: block; }
+
+  .loading {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    color: var(--cyan);
+    font-size: 13px;
+    margin-top: 16px;
+  }
+  .loading.show { display: flex; }
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid var(--cyan-dim);
+    border-top-color: var(--cyan);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow mono">MULTISPECTRAL INFERENCE // U-NET</div>
+  <h1>Water Segmentation</h1>
+  <p class="sub">
+    Upload a multispectral satellite image (12 bands, GeoTIFF format) and the
+    model will automatically detect water regions using a U-Net network.
+  </p>
+  {% if model_loaded %}
+  <div class="status ok mono"><span class="dot"></span> MODEL LOADED</div>
+  {% else %}
+  <div class="status bad mono"><span class="dot"></span> NO WEIGHTS FOUND — place unet_water.pth in models/</div>
+  {% endif %}
+</header>
+
+<main>
+  <div class="panel">
+    <div class="panel-title mono">01 / Input Image</div>
+
+    <form id="uploadForm">
+      <div class="dropzone" id="dropzone">
+        <p><strong>Drag and drop a .tif file here</strong></p>
+        <p class="hint">or click to browse — must contain 12 spectral bands</p>
+        <p class="filename" id="filename"></p>
+      </div>
+      <input type="file" id="fileInput" accept=".tif,.tiff">
+
+      <div class="bands">
+        <div class="band"><b>1</b> Coastal Aerosol</div>
+        <div class="band"><b>2</b> Blue</div>
+        <div class="band"><b>3</b> Green</div>
+        <div class="band"><b>4</b> Red</div>
+        <div class="band"><b>5</b> NIR</div>
+        <div class="band"><b>6</b> SWIR1</div>
+        <div class="band"><b>7</b> SWIR2</div>
+        <div class="band"><b>8</b> QA Band</div>
+        <div class="band"><b>9</b> Merit DEM</div>
+        <div class="band"><b>10</b> Copernicus DEM</div>
+        <div class="band"><b>11</b> ESA World Cover</div>
+        <div class="band"><b>12</b> Water Occurrence</div>
+      </div>
+
+      <button type="submit" id="submitBtn" disabled>Run Model</button>
+      <div class="loading" id="loading"><div class="spinner"></div> Running prediction...</div>
+      <div class="error-box" id="errorBox"></div>
+    </form>
+  </div>
+
+  <div class="panel results" id="results">
+    <div class="panel-title mono">02 / Prediction</div>
+    <div class="grid-2">
+      <div class="img-card">
+        <img id="rgbImg" src="" alt="RGB preview">
+        <div class="label mono">RGB Preview</div>
+      </div>
+      <div class="img-card">
+        <img id="maskImg" src="" alt="Predicted mask">
+        <div class="label mono">Predicted Water Mask</div>
+      </div>
+    </div>
+    <div class="metric">
+      <div class="value" id="waterPct">—</div>
+      <div class="desc">% of the image area classified as water</div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const filenameEl = document.getElementById('filename');
+  const submitBtn = document.getElementById('submitBtn');
+  const form = document.getElementById('uploadForm');
+  const loading = document.getElementById('loading');
+  const errorBox = document.getElementById('errorBox');
+  const results = document.getElementById('results');
+
+  let selectedFile = null;
+
+  dropzone.addEventListener('click', () => fileInput.click());
+
+  dropzone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('drag');
+  });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('drag');
+    if (e.dataTransfer.files.length) {
+      selectedFile = e.dataTransfer.files[0];
+      updateFilename();
+    }
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) {
+      selectedFile = fileInput.files[0];
+      updateFilename();
+    }
+  });
+
+  function updateFilename() {
+    filenameEl.textContent = selectedFile ? selectedFile.name : '';
+    submitBtn.disabled = !selectedFile;
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!selectedFile) return;
+
+    errorBox.classList.remove('show');
+    results.classList.remove('show');
+    loading.classList.add('show');
+    submitBtn.disabled = true;
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      const res = await fetch('/predict', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'An unexpected error occurred');
+      }
+
+      document.getElementById('rgbImg').src = data.rgb_preview;
+      document.getElementById('maskImg').src = data.mask;
+      document.getElementById('waterPct').textContent = data.water_percentage + '%';
+      results.classList.add('show');
+
+    } catch (err) {
+      errorBox.textContent = err.message;
+      errorBox.classList.add('show');
+    } finally {
+      loading.classList.remove('show');
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+
+</body>
+</html>
