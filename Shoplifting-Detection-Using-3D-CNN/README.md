@@ -1,300 +1,550 @@
-Shoplifting Detection Using 3D CNN
+# 🎥 Shoplifting Detection Using 3D CNN
+
+<p align="center">
+  <img src="https://img.shields.io/badge/PyTorch-3D%20CNN-ee4c2c?logo=pytorch&logoColor=white" alt="PyTorch">
+  <img src="https://img.shields.io/badge/Computer%20Vision-Video%20Classification-blue" alt="Computer Vision">
+  <img src="https://img.shields.io/badge/Dataset-855%20Videos-green" alt="Dataset">
+  <img src="https://img.shields.io/badge/Task-Binary%20Classification-orange" alt="Task">
+</p>
+
+<p align="center">
+  <b>A deep learning approach for detecting shoplifting behavior from video using a custom 3D Convolutional Neural Network.</b>
+</p>
+
+---
+
+## 📌 Overview
+
+This project focuses on **video-based shoplifting detection** using a custom **3D Convolutional Neural Network (3D CNN)** implemented with PyTorch.
+
+Unlike traditional image classification, where each frame is processed independently, a 3D CNN learns from both:
+
+* 🖼️ **Spatial information** — visual features within each frame
+* ⏱️ **Temporal information** — changes and actions across consecutive frames
+
+The model performs binary classification:
+
+> **Non-Shoplifting vs Shoplifting**
+
+---
+
+## 🚀 Project Pipeline
 
-A video classification project for detecting shoplifting behavior using a custom 3D Convolutional Neural Network (3D CNN) implemented with PyTorch.
+```text
+                    ┌─────────────────────┐
+                    │     Video Dataset   │
+                    │      855 Videos     │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │   Video Inspection  │
+                    │ & Duplicate Check   │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │ Uniform Frame       │
+                    │ Sampling            │
+                    │      32 Frames      │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │ Resize + Normalize  │
+                    │    112 × 112        │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │      3D CNN         │
+                    │  Spatial + Temporal │
+                    │      Features       │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │   Classification    │
+                    │                     │
+                    │ Non-Shoplifting     │
+                    │ Shoplifting         │
+                    └─────────────────────┘
+```
 
-The model classifies videos into two classes:
+---
 
-Non-Shoplifting
+# 📊 Dataset
 
-Shoplifting
+The dataset contains **855 videos** belonging to two classes.
 
-Project Overview
+| Class              |  Videos | Percentage |
+| :----------------- | ------: | ---------: |
+| 🟢 Non-Shoplifting |     531 |     62.11% |
+| 🔴 Shoplifting     |     324 |     37.89% |
+| **Total**          | **855** |   **100%** |
 
-The project processes videos as short spatiotemporal clips. Instead of treating each video frame independently, the 3D CNN learns spatial features from individual frames while also modeling temporal information across consecutive sampled frames.
+### 🎞️ Video Statistics
 
-Pipeline
+| Statistic      | Value  |
+| :------------- | :----- |
+| Minimum frames | 75     |
+| Maximum frames | 1,850  |
+| Average frames | 331.42 |
+| Median frames  | 325    |
 
-Video Dataset
-     │
-     ├── Dataset inspection
-     ├── Duplicate-content check
-     ├── Train / Validation / Test split
-     │
-     ▼
-Uniform frame sampling
-     │
-     ▼
-Resize frames to 112 × 112
-     │
-     ▼
-Normalize pixel values to [0, 1]
-     │
-     ▼
-32 frames per video
-     │
-     ▼
-3D CNN
-     │
-     ▼
-Binary classification
-     │
-     ├── Non-Shoplifting
-     └── Shoplifting
+### 📥 Download Dataset
 
-Dataset
+The complete dataset is available on Google Drive:
 
-The dataset contains 855 videos:
+<p align="center">
+  <a href="https://drive.google.com/file/d/1KCKfyIGbQi8a7bIYta3LM8dFStxVzVX-/view">
+    <img src="https://img.shields.io/badge/Download-Dataset-blue?style=for-the-badge&logo=googledrive&logoColor=white" alt="Download Dataset">
+  </a>
+</p>
 
-Class
+> **Note:** The dataset is not included in this repository because of its large size.
 
-Videos
+---
 
-Percentage
+# 🔍 Data Inspection
 
-Non-Shoplifting
+Before training, the dataset was inspected for:
 
-531
+* Missing values
+* Duplicate video paths
+* Class distribution
+* Video length distribution
+* Potential duplicate video content
 
-62.11%
+An MD5-based check was also performed on selected videos to verify whether identical video content existed under different filenames.
 
-Shoplifting
+---
 
-324
+# ⚙️ Preprocessing
 
-37.89%
+Each video goes through the following preprocessing pipeline.
 
-Total
+### 1. Uniform Frame Sampling
 
-855
+**32 frames** are uniformly sampled across the entire video.
 
-100%
+```text
+Video
+│
+├── Frame 1
+├── Frame 2
+├── ...
+├── Frame 32
+│
+└── Sampled uniformly across video duration
+```
 
-The videos contain between 75 and 1,850 frames, with an average of approximately 331 frames and a median of 325 frames.
+### 2. Color Conversion
 
-The dataset is not included in this repository because of its size. The notebook downloads the dataset from Google Drive when executed in the Kaggle environment.
+OpenCV reads frames in BGR format, so each frame is converted to RGB.
 
-Data Preprocessing
+### 3. Resizing
 
-For every video:
+Every frame is resized to:
 
-The video is opened using OpenCV.
+```text
+112 × 112 × 3
+```
 
-32 frames are sampled uniformly across the full video.
+### 4. Normalization
 
-Each frame is converted from BGR to RGB.
+Pixel values are normalized from:
 
-Frames are resized to 112 × 112.
+```text
+[0, 255] → [0, 1]
+```
 
-Pixel values are normalized to [0, 1].
+### 5. Tensor Format
 
-The tensor is rearranged from (T, H, W, C) to (C, T, H, W) for PyTorch 3D convolution.
+The video tensor is converted from:
 
-Videos that cannot be read are represented by zero-filled frames, while missing sampled frames can be filled using the last valid frame.
+```text
+(T, H, W, C)
+```
 
-Data Augmentation
+to PyTorch's 3D CNN format:
 
-The augmentation function is currently disabled and returns the original frames unchanged.
+```text
+(C, T, H, W)
+```
 
-An earlier augmentation implementation is kept commented in the notebook and includes:
+Therefore, each input video becomes:
 
-Horizontal flipping
+```text
+3 × 32 × 112 × 112
+```
 
-Random resized crop
+---
 
-Brightness adjustment
+# ✂️ Dataset Split
 
-Contrast adjustment
+A **stratified train/validation/test split** was used:
 
-Saturation adjustment
+| Split      | Percentage |
+| :--------- | ---------: |
+| Training   |        70% |
+| Validation |        15% |
+| Testing    |        15% |
 
-Train / Validation / Test Split
+Stratification preserves the class distribution across all three subsets.
 
-The dataset is split using stratified sampling:
+---
 
-70% Training
+# 🧠 Model Architecture
 
-15% Validation
+A custom **3D CNN** was developed from scratch using PyTorch.
 
-15% Test
+The network extracts both spatial and temporal information from the video clips.
 
-The split is stratified by class label to preserve the class distribution.
+## Feature Extractor
 
-Model Architecture
-
-The project uses a custom 3D CNN built with PyTorch.
-
-Feature Extractor
-
-Conv3D: 3 → 32
-
-GroupNorm
-
-ReLU
-
-Spatial MaxPool3D
-
-Conv3D: 32 → 64
-
-GroupNorm
-
-ReLU
-
-Spatial MaxPool3D
-
-Conv3D: 64 → 128
-
-GroupNorm
-
-ReLU
-
-MaxPool3D
-
-Conv3D: 128 → 256
-
-GroupNorm
-
-ReLU
-
-Dropout3D
-
+```text
+Input
+3 × 32 × 112 × 112
+        │
+        ▼
+┌──────────────────────┐
+│ Conv3D  3 → 32       │
+│ GroupNorm            │
+│ ReLU                 │
+│ MaxPool3D            │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ Conv3D  32 → 64      │
+│ GroupNorm            │
+│ ReLU                 │
+│ MaxPool3D            │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ Conv3D  64 → 128     │
+│ GroupNorm            │
+│ ReLU                 │
+│ MaxPool3D             │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ Conv3D  128 → 256    │
+│ GroupNorm            │
+│ ReLU                 │
+│ Dropout3D            │
+└──────────┬───────────┘
+           │
+           ▼
 Adaptive Average Pooling
+           │
+           ▼
+        256 Features
+```
 
-Classifier
+## Classification Head
 
-Linear: 256 → 256
-
+```text
+256
+ │
+ ▼
+Linear 256 → 256
+ │
+ ▼
 ReLU
-
-Dropout
-
-Linear: 256 → 128
-
+ │
+ ▼
+Dropout 0.4
+ │
+ ▼
+Linear 256 → 128
+ │
+ ▼
 ReLU
+ │
+ ▼
+Dropout 0.3
+ │
+ ▼
+Linear 128 → 2
+ │
+ ▼
+┌───────────────────────┐
+│ 0 → Non-Shoplifting   │
+│ 1 → Shoplifting       │
+└───────────────────────┘
+```
 
-Dropout
+### Weight Initialization
 
-Linear: 128 → 2
+Kaiming initialization is used for:
 
-Kaiming initialization is used for convolutional and linear layers.
+* `Conv3D` layers
+* `Linear` layers
 
-Training Configuration
+---
 
-Parameter
+# 🏋️ Training Configuration
 
-Value
+| Parameter         | Value             |
+| :---------------- | :---------------- |
+| Framework         | PyTorch           |
+| Input Size        | 112 × 112         |
+| Frames / Video    | 32                |
+| Batch Size        | 8                 |
+| Epochs            | 20                |
+| Optimizer         | Adam              |
+| Learning Rate     | 3 × 10⁻⁴          |
+| Weight Decay      | 1 × 10⁻⁵          |
+| LR Scheduler      | ReduceLROnPlateau |
+| LR Factor         | 0.5               |
+| LR Patience       | 3                 |
+| Gradient Clipping | 5.0               |
+| Random Seed       | 42                |
 
-Image size
+A `WeightedRandomSampler` was used during training to reduce the effect of class imbalance.
 
-112 × 112
+---
 
-Frames per video
+# 📈 Results
 
-32
+## Test Performance
 
-Number of classes
+| Metric       |      Score |
+| :----------- | ---------: |
+| **Accuracy** | **62.02%** |
+| Precision    |       0.00 |
+| Recall       |       0.00 |
+| F1-score     |       0.00 |
 
-2
+### Classification Report
 
-Batch size
+| Class           | Precision | Recall | F1-score |
+| :-------------- | --------: | -----: | -------: |
+| Non-Shoplifting |      0.62 |   1.00 |     0.77 |
+| Shoplifting     |      0.00 |   0.00 |     0.00 |
 
-8
+---
 
-Epochs
+# ⚠️ Important Result
 
-20
+Although the model achieved approximately **62% accuracy**, the result should **not** be interpreted as successful shoplifting detection.
 
-Optimizer
+The model failed to correctly identify the Shoplifting class:
 
-Adam
+```text
+Shoplifting Recall = 0.00
+Shoplifting F1     = 0.00
+```
 
-Learning rate
+The dataset contains approximately **62% Non-Shoplifting videos**, meaning that predicting the majority class can already produce an accuracy close to 62%.
 
-3e-4
+Therefore:
 
-Weight decay
+> **Accuracy alone is not sufficient to evaluate this model.**
 
-1e-5
+For this task, metrics such as **Recall, F1-score, and the Confusion Matrix** are much more informative.
 
-LR scheduler
+---
 
-ReduceLROnPlateau
+# 📉 Training Observation
 
-LR factor
+The model showed a tendency toward majority-class predictions during training.
 
-0.5
+The best validation F1-score observed during training was approximately:
 
-LR patience
+```text
+Validation F1 = 0.5455
+```
 
-3
+This occurred around **Epoch 4**.
 
-Gradient clipping
+However, the final test evaluation was performed using the model state at the end of training rather than reloading the best saved checkpoint.
 
-max norm 5.0
+This is an important area for improvement in the next experiment.
 
-Random seed
+---
 
-42
+# 🔬 Error Analysis
 
-A WeightedRandomSampler is used during training to reduce the effect of class imbalance.
+The current results suggest several possible limitations.
 
-Results
+### 1. Class Imbalance
 
-The final test evaluation produced:
+The dataset contains more Non-Shoplifting videos than Shoplifting videos.
 
-Metric
+### 2. Training From Scratch
 
-Score
+The model is a custom 3D CNN trained from scratch, which can make learning robust video representations more difficult with a relatively small dataset.
 
-Accuracy
+### 3. Limited Temporal Sampling
 
-62.02%
+Only 32 frames are sampled from each video.
 
-Precision
+Short actions occurring between sampled frames may not be captured sufficiently.
 
-0.00
+### 4. No Active Augmentation
 
-Recall
+The final experiment does not apply augmentation.
 
-0.00
+The notebook contains an augmentation implementation, but it is currently disabled.
 
-F1-score
+### 5. Best Checkpoint Not Used During Testing
 
-0.00
+The training loop saves:
 
-The classification report shows that the final model predicted the Non-Shoplifting class while failing to correctly identify the Shoplifting class.
+```text
+best_3dcnn_model.pth
+```
 
-This means that although the accuracy is around 62%, the model is not suitable yet for reliable shoplifting detection.
+based on the best validation F1-score.
 
-Important Training Observation
+However, the final test evaluation should reload this checkpoint before calculating the final metrics.
 
-The best validation F1-score reached 0.5455 at epoch 4, but the final test evaluation in the notebook is performed using the model state from the end of epoch 20.
+---
 
-For a proper final evaluation, the saved best_3dcnn_model.pth checkpoint should be loaded before evaluating the test set.
+# 🚀 Future Improvements
 
-Also, class weights are calculated in the notebook, but the current CrossEntropyLoss is created without passing those weights. This is a potential improvement for the next experiment.
+The following experiments would be valuable:
 
-Hardware
+### 🔹 Better Checkpoint Evaluation
 
-The notebook was executed with:
+Load the best validation checkpoint before testing.
 
-2 × NVIDIA Tesla T4 GPUs
+```python
+model.load_state_dict(
+    torch.load("best_3dcnn_model.pth",
+               map_location=device)
+)
+```
 
-Approximately 14.56 GB GPU memory per GPU
+### 🔹 Class-Weighted Loss
 
-CUDA 12.8
+The notebook calculates class weights but currently does not pass them to the loss function.
 
-The model automatically uses CUDA when available.
+A future experiment can use:
 
-Installation
+```python
+criterion = nn.CrossEntropyLoss(
+    weight=class_weights
+)
+```
 
+### 🔹 Video Augmentation
+
+Introduce temporally consistent augmentation such as:
+
+* Horizontal flipping
+* Random cropping
+* Brightness variation
+* Contrast variation
+* Saturation variation
+
+### 🔹 Temporal Experiments
+
+Compare:
+
+```text
+16 frames
+32 frames
+64 frames
+```
+
+and investigate different temporal sampling strategies.
+
+### 🔹 Pretrained Video Models
+
+Compare the custom 3D CNN against pretrained architectures to determine whether transfer learning provides better spatiotemporal representations.
+
+### 🔹 Additional Metrics
+
+Evaluate:
+
+* Precision
+* Recall
+* F1-score
+* ROC-AUC
+* Confusion Matrix
+* Balanced Accuracy
+
+```
+
+> The dataset should **not** be committed to the repository.
+
+---
+
+# 💻 Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/YOUR_USERNAME/Shoplifting-Detection-3D-CNN.git
+```
+
+Move into the project directory:
+
+```bash
+cd Shoplifting-Detection-3D-CNN
+```
+
+Install dependencies:
+
+```bash
 pip install -r requirements.txt
+```
 
-Running the Project
+---
 
-The main experiment is provided as a Jupyter Notebook:
+# ▶️ Running the Project
 
+The complete experiment is available in:
+
+```text
 shoplifting-detection-using-3d-cnn.ipynb
+```
 
-The notebook was designed for a Kaggle environment and downloads the dataset from Google Drive.
+The notebook was developed for a **Kaggle GPU environment** and downloads the dataset from Google Drive.
 
-If running outside Kaggle, update the dataset download and extraction paths accordingly.
+Open the notebook in Kaggle or Jupyter and execute the cells sequentially.
+
+---
+
+# 🖥️ Hardware
+
+The experiment was executed using:
+
+```text
+GPU: 2 × NVIDIA Tesla T4
+CUDA: 12.8
+Framework: PyTorch
+```
+
+The notebook automatically detects CUDA and uses the available GPU when possible.
+
+---
+
+# 📌 Key Takeaways
+
+This project demonstrates an end-to-end video classification pipeline using a custom 3D CNN:
+
+```text
+Video
+ ↓
+Frame Sampling
+ ↓
+Preprocessing
+ ↓
+3D Convolution
+ ↓
+Spatiotemporal Feature Extraction
+ ↓
+Binary Classification
+```
+
+The experiment establishes a baseline for shoplifting detection and highlights the challenges of video classification with limited data and class imbalance.
+
+The current model is **not production-ready**, but it provides a foundation for future experiments involving better sampling, augmentation, class-weighted learning, checkpoint selection, and pretrained video models.
