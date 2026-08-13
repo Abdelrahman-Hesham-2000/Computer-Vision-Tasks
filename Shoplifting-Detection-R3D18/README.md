@@ -354,14 +354,6 @@ Possible improvements include:
 
 ---
 
-## 👨‍💻 Author
-
-**Abdelrahman Hesham**
-
-Machine Learning Engineer | Computer Vision
-
----
-
 ## ⭐ Acknowledgment
 
 This project uses the R3D-18 architecture and pretrained weights provided by **TorchVision**.
