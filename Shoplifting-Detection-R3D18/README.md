@@ -1,362 +1,311 @@
 # 🛒 Shoplifting Detection Using R3D-18
 
-A deep learning video classification project for detecting **shoplifting behavior** from surveillance videos using a **pretrained R3D-18 3D Convolutional Neural Network**.
+A deep learning video classification project for detecting shoplifting behavior from surveillance videos using a pretrained R3D-18 3D Convolutional Neural Network.
 
-The model analyzes temporal information across video frames and classifies each video into one of two classes:
+The model classifies surveillance videos into two categories:
 
-* **Non-Shoplifting**
-* **Shoplifting**
+- 🛒 Shoplifting
+- ✅ Non-Shoplifting
 
 ---
 
 ## 📌 Project Overview
 
-Traditional image classification models analyze individual frames independently. However, shoplifting is a **temporal behavior**, meaning that the sequence of actions across multiple frames is important.
+Shoplifting is a temporal behavior, which means that analyzing a single image or frame may not be sufficient to correctly identify the activity.
 
-This project uses **R3D-18**, a 3D CNN architecture designed for video understanding, to learn both:
+To capture both spatial and temporal information, this project uses R3D-18, a 3D CNN architecture based on ResNet.
 
-* Spatial information from individual frames
-* Temporal information across consecutive frames
+The model is initialized with pretrained Kinetics weights and fine-tuned for binary video classification.
 
-The R3D-18 backbone is initialized with pretrained **Kinetics weights** and fine-tuned for binary shoplifting classification.
+### Why R3D-18?
+
+Unlike traditional 2D CNNs that process individual frames, 3D CNNs use 3D convolutions to learn:
+
+- Spatial features from video frames
+- Temporal patterns across consecutive frames
+
+This makes R3D-18 suitable for video-based action recognition tasks such as shoplifting detection.
 
 ---
 
 ## 🧠 Model Architecture
 
-The project uses:
+The project uses R3D-18 (3D ResNet-18).
 
-**R3D-18 (3D ResNet-18)**
+The pretrained classification head is replaced with a binary classification layer.
 
-The original classification layer is replaced with:
+Input Video → Frame Sampling → Preprocessing → R3D-18 Backbone → Dropout → Fully Connected Layer → 2 Classes
 
-```text
-R3D-18 Backbone
-      ↓
-Dropout (0.4)
-      ↓
-Linear Layer
-      ↓
-2 Classes
-```
+Classes:
 
-The model uses pretrained `R3D_18_Weights.DEFAULT` from TorchVision.
+- Non-Shoplifting
+- Shoplifting
+
+The R3D-18 model is initialized using pretrained Kinetics weights.
 
 ---
 
 ## 📂 Dataset
 
-The dataset contains surveillance videos divided into two classes:
+The dataset consists of surveillance videos divided into two classes:
 
-```text
-Shop DataSet/
-├── non shop lifters/
-│   └── *.mp4
-│
-└── shop lifters/
-    └── *.mp4
-```
+| Class | Description |
+|---|---|
+| 🛒 Shoplifting | Videos containing shoplifting behavior |
+| ✅ Non-Shoplifting | Videos without shoplifting behavior |
 
-### Dataset Statistics
+The dataset is hosted externally on Google Drive because of its large size and is not included in this GitHub repository.
 
-| Class           |  Videos |
-| --------------- | ------: |
-| Non-Shoplifting |     313 |
-| Shoplifting     |     324 |
-| **Total**       | **637** |
+### 📥 Download Dataset
 
-The original dataset contained **855 videos**. Exact duplicate videos were detected using MD5 hashing and removed before training.
+[Download the Shoplifting Dataset](https://drive.google.com/file/d/1KCKfyIGbQi8a7bIYta3LM8dFStxVzVX-/view)
 
-The duplicate-checking pipeline found:
-
-* 855 videos initially
-* 436 videos involved in exact duplicate groups
-* 0 cross-class exact duplicates
-* 637 unique videos after deduplication
+Make sure the Google Drive file is accessible to users with the link.
 
 ---
 
 ## 🎥 Video Preprocessing
 
-Each video is processed using the following pipeline:
+Each video goes through a preprocessing pipeline before being passed to the model.
+
+### Processing Steps
 
 1. Read the video using OpenCV.
-2. Uniformly sample **128 frames** across the entire video.
+2. Uniformly sample frames from the video.
 3. Convert frames from BGR to RGB.
-4. Resize each frame to **112 × 112**.
-5. Normalize pixel values to `[0, 1]`.
-6. Apply training-time video augmentation.
-7. Rearrange the tensor to:
+4. Resize frames to 112 × 112.
+5. Normalize pixel values.
+6. Apply training augmentation.
+7. Rearrange the tensor into the format required by R3D-18.
 
-```text
-(C, T, H, W)
-```
+The input tensor format is (B, C, T, H, W).
 
-where:
+Where:
 
-```text
-C = 3
-T = 128
-H = 112
-W = 112
-```
+- B = Batch Size
+- C = 3 RGB Channels
+- T = Number of Frames
+- H = 112
+- W = 112
 
-The final batch input to R3D-18 is:
+Example input shape:
 
-```text
 (B, 3, 128, 112, 112)
-```
 
 ---
 
 ## 🔄 Data Augmentation
 
-Augmentation is applied only during training.
+Data augmentation is applied during training to improve the model's ability to generalize to different surveillance conditions.
 
-This helps improve the model's ability to generalize to different surveillance conditions and video variations.
+Augmentation helps the model become more robust to variations in:
+
+- Camera position
+- Object position
+- Lighting
+- Motion
+- Video appearance
 
 ---
 
 ## ⚖️ Class Imbalance
 
-The dataset contains slightly different numbers of videos between the two classes.
+The dataset contains a slightly different number of samples between the two classes.
 
-To address this, balanced class weights are calculated using:
+To reduce the effect of class imbalance, class weights are calculated and used with the Cross Entropy Loss function.
 
-```python
-compute_class_weight()
-```
-
-and incorporated into:
-
-```python
-nn.CrossEntropyLoss(weight=class_weights)
-```
-
-This prevents the model from becoming biased toward the majority class.
+The loss function uses weighted Cross Entropy Loss to give appropriate importance to each class during training.
 
 ---
 
 ## 🏋️ Training Configuration
 
-| Parameter         |             Value |
-| ----------------- | ----------------: |
-| Model             |            R3D-18 |
-| Pretrained        |               Yes |
-| Image Size        |         112 × 112 |
-| Frames per Video  |               128 |
-| Number of Classes |                 2 |
-| Batch Size        |                 2 |
-| Epochs            |                10 |
-| Learning Rate     |              1e-4 |
-| Weight Decay      |              1e-5 |
-| Optimizer         |              Adam |
-| Scheduler         | ReduceLROnPlateau |
-| LR Factor         |               0.5 |
-| LR Patience       |                 3 |
-| Random Seed       |                42 |
-
-Gradient clipping is also used with:
-
-```python
-max_norm=5.0
-```
+| Parameter | Value |
+|---|---|
+| Model | R3D-18 |
+| Pretrained | Yes |
+| Pretrained Dataset | Kinetics |
+| Number of Classes | 2 |
+| Frames per Video | 128 |
+| Frame Size | 112 × 112 |
+| Batch Size | 2 |
+| Epochs | 10 |
+| Learning Rate | 1e-4 |
+| Weight Decay | 1e-5 |
+| Optimizer | Adam |
+| Loss Function | Weighted Cross Entropy |
+| LR Scheduler | ReduceLROnPlateau |
+| Gradient Clipping | Yes |
+| Random Seed | 42 |
 
 ---
 
 ## 📊 Evaluation
 
-The model is evaluated on a held-out test set using:
+The trained model is evaluated using a separate test set.
 
-* Accuracy
-* Precision
-* Recall
-* F1-score
-* Classification Report
-* Confusion Matrix
+The following metrics are used:
 
-Example evaluation:
+- Accuracy
+- Precision
+- Recall
+- F1-Score
+- Classification Report
+- Confusion Matrix
 
-```text
-Test Accuracy
-Precision
-Recall
-F1-score
-```
+The confusion matrix helps analyze how well the model distinguishes between Non-Shoplifting and Shoplifting.
 
-The confusion matrix is used to analyze errors between:
-
-```text
-Non-Shoplifting
-Shoplifting
-```
+The detailed evaluation results and visualizations are available inside the Jupyter Notebook.
 
 ---
 
 ## 🛠️ Technologies Used
 
-* Python
-* PyTorch
-* TorchVision
-* OpenCV
-* NumPy
-* Pandas
-* Scikit-learn
-* Matplotlib
-* Seaborn
-* tqdm
-* Google Drive / gdown
-* Kaggle GPU
+- Python
+- PyTorch
+- TorchVision
+- OpenCV
+- NumPy
+- Pandas
+- Scikit-learn
+- Matplotlib
+- Seaborn
+- tqdm
+- gdown
 
 ---
 
 ## 📁 Project Structure
 
-```text
 Shoplifting-Detection-R3D18/
-│
 ├── shoplifting-detection-using-r3d-18.ipynb
 ├── README.md
 ├── requirements.txt
-│
+├── .gitignore
 └── models/
     └── best_r3d18_train_loss_model.pth
-```
 
-> **Note:** The dataset and trained model weights are not included in the GitHub repository because of their large file sizes.
+Large files such as the dataset and trained model weights should not be committed directly to GitHub.
 
 ---
 
 ## 🚀 How to Run
 
-### 1. Clone the repository
+### 1. Clone the Repository
 
-```bash
+Clone the repository and navigate to the project directory.
+
 git clone https://github.com/YOUR_USERNAME/Shoplifting-Detection-R3D18.git
 
 cd Shoplifting-Detection-R3D18
-```
 
-### 2. Install dependencies
+### 2. Install Dependencies
 
-```bash
+Install the required Python packages:
+
 pip install -r requirements.txt
-```
 
-### 3. Open the notebook
+### 3. Download the Dataset
 
-Run:
+Download the dataset from Google Drive:
 
-```text
+[Shoplifting Dataset](https://drive.google.com/file/d/1KCKfyIGbQi8a7bIYta3LM8dFStxVzVX-/view)
+
+Then extract the dataset and update the dataset path inside the notebook if necessary.
+
+### 4. Run the Notebook
+
+Open the Jupyter Notebook:
+
 shoplifting-detection-using-r3d-18.ipynb
-```
 
-The notebook was developed and tested in a Kaggle GPU environment.
+Run the notebook cells sequentially.
 
----
-
-## 💾 Dataset
-
-The dataset is downloaded from Google Drive inside the notebook using `gdown`.
-
-The notebook automatically downloads:
-
-```text
-dataset.zip
-```
-
-and extracts it into:
-
-```text
-/kaggle/working/Shop DataSet
-```
-
-You can replace the dataset download section with your own dataset path if running locally.
+The project was designed to take advantage of GPU acceleration for training.
 
 ---
 
 ## ⚡ Hardware
 
-The training notebook was executed using:
+Training deep video models such as R3D-18 requires significant GPU memory.
 
-```text
-2 × NVIDIA Tesla T4
-14.56 GB GPU Memory per GPU
-CUDA 12.8
-```
+The notebook was developed using GPU acceleration.
 
-The code automatically detects CUDA and uses GPU when available.
+CUDA is automatically detected using PyTorch.
 
-```python
-device = torch.device(
-    "cuda" if torch.cuda.is_available() else "cpu"
-)
-```
+If CUDA is unavailable, the model can fall back to CPU, although training will be significantly slower.
 
 ---
 
-## 🔬 Key Features
+## 🔍 Duplicate Detection
 
-### Duplicate Detection
+To avoid data leakage and duplicated samples, the dataset was checked for duplicate videos.
 
-The project includes a dedicated duplicate-detection pipeline using:
+The project uses hashing-based methods to identify exact duplicate files before training.
 
-* MD5 hashing
-* Video metadata comparison
-* Frame-based visual comparison
-* dHash similarity
-
-This helps prevent duplicated videos from affecting the training process.
-
-### Temporal Video Modeling
-
-Unlike standard 2D CNNs, R3D-18 processes video clips using 3D convolutions, allowing the model to learn temporal patterns in addition to spatial features.
-
-### Transfer Learning
-
-The model uses a pretrained R3D-18 backbone with Kinetics pretrained weights, reducing the amount of training required compared with training a 3D CNN completely from scratch.
+This helps ensure that duplicate videos do not unnecessarily appear in different dataset splits.
 
 ---
 
-## 📌 Results
+## 🔬 Transfer Learning
 
-The notebook evaluates the final model using a held-out test set and reports:
+Instead of training R3D-18 completely from scratch, the model uses pretrained weights.
 
-* Accuracy
-* Precision
-* Recall
-* F1-score
-* Classification Report
-* Confusion Matrix
+The pretrained backbone has already learned useful visual and temporal representations from the Kinetics dataset.
 
-The exact results are available in the notebook output.
+The model is then adapted to the specific task of:
+
+Video → Shoplifting / Non-Shoplifting
+
+This approach provides a strong initialization compared with training a 3D CNN completely from scratch.
+
+---
+
+## 📈 Results
+
+The model is evaluated using the held-out test set.
+
+Performance is reported using:
+
+- Accuracy
+- Precision
+- Recall
+- F1-Score
+- Classification Report
+- Confusion Matrix
+
+The detailed results and visualizations are available inside the Jupyter Notebook.
 
 ---
 
 ## 🔮 Future Improvements
 
-Possible improvements include:
+Several improvements can be explored in future versions of the project:
 
-* Training for more epochs
-* Using a larger batch size when GPU memory allows
-* Fine-tuning learning rates
-* Stronger temporal augmentation
-* Using longer or multiple video clips per sample
-* Testing other video architectures such as:
+- Train for more epochs
+- Experiment with different learning rates
+- Increase the number of sampled frames
+- Experiment with different frame resolutions
+- Use stronger temporal augmentation
+- Perform more extensive hyperparameter tuning
+- Compare R3D-18 with other video architectures
+- Experiment with R(2+1)D
+- Experiment with MC3
+- Experiment with X3D
+- Experiment with Video Transformers
+- Implement real-time video inference
+- Deploy the trained model as an API or web application
 
-  * R(2+1)D
-  * MC3
-  * Video Swin Transformer
-  * X3D
-* Using cross-validation
-* Adding real-time webcam/video inference
-* Deploying the model as an API
+---
+
+## 📚 Project Workflow
+
+Dataset → Duplicate Detection → Dataset Splitting → Video Frame Sampling → Preprocessing → Data Augmentation → Pretrained R3D-18 → Training → Evaluation
 
 ---
 
 ## ⭐ Acknowledgment
 
-This project uses the R3D-18 architecture and pretrained weights provided by **TorchVision**.
+This project uses the R3D-18 architecture and pretrained video classification weights provided through TorchVision.
 
 If you find this project useful, consider giving the repository a ⭐.
-
