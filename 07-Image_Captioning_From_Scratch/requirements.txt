@@ -1,0 +1,11 @@
+torch
+torchvision
+numpy
+pandas
+matplotlib
+Pillow
+tqdm
+nltk
+pycocoevalcap
+jupyter
+ipykernel
